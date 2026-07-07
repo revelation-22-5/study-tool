@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Study Tool</title>
+<meta name="theme-color" content="#F6F4EF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Study Tool">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./favicon.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathlive@0.100.0/dist/mathlive.min.js"></script>
+<style>
+  :root{
+    --bg:#F6F4EF; --bg-soft:#EFEDE6; --surface:#FFFFFF;
+    --ink:#1C2530; --ink-2:#5A6472; --ink-3:#97A0AC;
+    --hair:#E5E2DA; --hair-2:#EDEBE4;
+    --accent:#2F4A6B; --accent-soft:#EAEEF3; --accent-tint:#F2F5F8;
+    --good:#3E7C63; --good-soft:#EAF1ED;
+    --warn:#9A5B4A; --warn-soft:#F4ECE8;
+    --cover:#E8E6DF;
+    --radius:20px; --radius-sm:13px;
+    --shadow:0 1px 2px rgba(28,37,48,.04), 0 6px 20px rgba(28,37,48,.06);
+    --shadow-sm:0 1px 2px rgba(28,37,48,.05);
+    --sans:-apple-system,BlinkMacSystemFont,'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    --mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,monospace;
+    --tabbar-h:64px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5;
+    padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px);letter-spacing:-.01em}
+  .app{max-width:600px;margin:0 auto}
+
+  .nav{padding:14px 20px 4px;position:sticky;top:0;z-index:20;background:linear-gradient(var(--bg) 78%, rgba(246,244,239,0))}
+  .nav-row{display:flex;justify-content:space-between;align-items:center;min-height:34px;gap:10px}
+  .nav-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+  .nav-title{font-size:26px;font-weight:800;letter-spacing:-.03em}
+  .nav-sub{font-size:13px;color:var(--ink-3);margin-top:1px}
+  .icon-btn{width:34px;height:34px;border-radius:50%;border:0;background:var(--surface);box-shadow:var(--shadow-sm);color:var(--accent);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .icon-btn:active{transform:scale(.92)}
+  .icon-btn.primary{background:var(--accent);color:#fff}
+
+  .search-wrap{padding:8px 16px 6px}
+  .search{position:relative}
+  .search input{width:100%;border:0;background:var(--bg-soft);border-radius:11px;padding:11px 14px 11px 38px;font-size:16px;font-family:inherit;color:var(--ink)}
+  .search input::placeholder{color:var(--ink-3)}
+  .search input:focus{outline:2px solid var(--accent-soft)}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+
+  .chiprow{display:flex;gap:8px;padding:7px 16px 3px;overflow-x:auto;scrollbar-width:none;align-items:center}
+  .chiprow::-webkit-scrollbar{display:none}
+  .chip{border:0;background:var(--surface);color:var(--ink-2);border-radius:11px;padding:9px 14px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:var(--shadow-sm);font-family:inherit;display:flex;align-items:center;gap:7px}
+  .chip .swatch{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .chip.on{background:var(--accent);color:#fff}
+  .chip.lv2{font-size:13px;padding:8px 13px;font-weight:600}
+  .chip.lv3{font-size:12.5px;padding:7px 12px;font-weight:600;border-radius:9px}
+  .chip .cnt{font-size:11px;opacity:.6;margin-left:2px}
+  .chip-add{border:1px dashed var(--hair);background:none;color:var(--ink-3);border-radius:11px;padding:8px 12px;font-size:15px;font-weight:700;cursor:pointer;flex-shrink:0;box-shadow:none}
+  .chip-add:active{transform:scale(.94)}
+
+  .list{padding:10px 16px 20px;display:flex;flex-direction:column;gap:13px}
+
+  .card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:17px 17px 13px;position:relative}
+  .card.inbox{border:1px dashed var(--hair)}
+  .card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:11px}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .tag{font-size:11.5px;font-weight:600;color:var(--ink-2);background:var(--bg-soft);border-radius:7px;padding:3px 9px}
+  .tag.type{font-weight:700}
+  .tag.due{background:var(--good-soft);color:var(--good)}
+  .tag.due.today{background:var(--warn-soft);color:var(--warn)}
+  .kebab{width:28px;height:28px;border-radius:8px;border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:19px;line-height:1;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .kebab:active{background:var(--bg-soft)}
+
+  .front{font-size:16.5px;font-weight:600;line-height:1.55;letter-spacing:-.015em;margin-bottom:4px}
+  .taglist{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
+  .taglist .t{font-size:12.5px;color:var(--accent);font-weight:600}
+  .taglist .t::before{content:'#';opacity:.45}
+
+  .modes{display:flex;flex-wrap:wrap;background:var(--bg-soft);border-radius:9px;padding:2px;gap:1px;width:fit-content}
+  .modes button{border:0;background:none;color:var(--ink-2);font-size:12px;font-weight:600;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit}
+  .modes button.on{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm)}
+
+  .field{margin-top:12px}
+  .field-label{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+  .back-formula{font-family:var(--mono);color:var(--accent);overflow-x:auto;padding:2px 0;min-height:30px}
+  .back-formula .katex{font-size:1.35em}
+  .back-text{font-size:16px;color:var(--ink);line-height:1.7;font-weight:500;white-space:pre-wrap}
+  .aux-text{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+  .back-img{border-radius:12px;overflow:hidden;border:1px solid var(--hair-2);background:#fff}
+  .back-img img{width:100%;display:block}
+
+  .cloze-blank{display:inline-block;min-width:44px;border-bottom:2px solid var(--accent);color:transparent;background:var(--accent-tint);border-radius:4px 4px 0 0;padding:0 6px;cursor:pointer;user-select:none;font-weight:700;transition:color .2s}
+  .cloze-blank.shown{color:var(--accent);background:transparent}
+  .line-hidden{background:var(--cover);border-radius:6px;color:transparent;cursor:pointer;user-select:none}
+  .line-shown{cursor:pointer}
+
+  .confuse-box{margin-top:12px;background:var(--warn-soft);border-radius:12px;padding:11px 13px}
+  .confuse-box .field-label{color:var(--warn)}
+  .confuse-text{font-size:14px;color:var(--ink);line-height:1.55}
+  .flip-btn{border:0;background:var(--accent-tint);color:var(--accent);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px}
+
+  .coverable{position:relative;border-radius:11px}
+  .coverable .cover{position:absolute;inset:-4px -8px;background:var(--cover);border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12.5px;color:var(--ink-3);font-weight:600;transition:opacity .25s ease;user-select:none}
+  .coverable .cover::after{content:'탭하여 확인'}
+  .coverable.revealed .cover{opacity:0;pointer-events:none}
+
+  .card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--hair-2)}
+  .skill{display:flex;align-items:center;gap:9px}
+  .skill-label{font-size:12px;color:var(--ink-3);font-weight:600}
+  .bars{display:flex;gap:3px}
+  .bar{width:22px;height:5px;border-radius:3px;background:var(--hair);border:0;cursor:pointer;padding:0}
+  .bar.fill{background:var(--accent)}
+  .promote{font-size:12.5px;font-weight:700;color:var(--accent);background:var(--accent-tint);border:0;border-radius:9px;padding:7px 13px;cursor:pointer;font-family:inherit}
+
+  .empty{text-align:center;padding:56px 30px;color:var(--ink-3)}
+  .empty .big{font-size:17px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+  .empty p{font-size:14px;line-height:1.7}
+
+  /* 훈련(플래시) */
+  .train-wrap{padding:12px 16px 24px}
+  .train-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .train-progress{font-size:13px;color:var(--ink-3);font-weight:600}
+  .train-bar{height:6px;background:var(--hair);border-radius:4px;overflow:hidden;margin-bottom:16px}
+  .train-bar>div{height:100%;background:var(--accent);transition:width .3s}
+  .flash{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:26px 22px;min-height:340px;display:flex;flex-direction:column}
+  .flash-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .flash-q{font-size:21px;font-weight:700;line-height:1.5;letter-spacing:-.02em}
+  .flash-hint{font-size:13px;color:var(--ink-3);margin-top:10px}
+  .flash-a{margin-top:22px;padding-top:20px;border-top:1px solid var(--hair-2)}
+  .flash-a .field-label{margin-bottom:8px}
+  .flash-a .back-formula .katex{font-size:1.5em}
+  .flash-a .back-text{font-size:18px}
+  .flash-a .back-img img{max-height:300px;width:auto;margin:0 auto}
+  .flash-spacer{flex:1}
+  .reveal-btn{width:100%;border:0;background:var(--accent-tint);color:var(--accent);border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:18px}
+  .judge{display:flex;gap:10px;margin-top:18px}
+  .judge button{flex:1;border:0;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .judge .no{background:var(--warn-soft);color:var(--warn)}
+  .judge .yes{background:var(--good-soft);color:var(--good)}
+  .train-done{text-align:center;padding:60px 30px}
+  .train-done .big{font-size:22px;font-weight:800;margin-bottom:8px}
+  .train-done p{color:var(--ink-3);font-size:14px;line-height:1.7}
+  .train-start{width:100%;border:0;background:var(--accent);color:#fff;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:20px}
+  .train-opt{display:flex;gap:8px;margin-bottom:16px}
+  .train-opt button{flex:1;border:0;background:var(--surface);color:var(--ink-2);border-radius:12px;padding:12px;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-sm);font-family:inherit}
+  .train-opt button.on{background:var(--accent);color:#fff}
+
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(246,244,239,.82);backdrop-filter:blur(20px) saturate(1.6);border-top:1px solid var(--hair);padding:7px 12px calc(env(safe-area-inset-bottom) + 4px);display:flex;justify-content:space-around;max-width:600px;margin:0 auto}
+  .tab{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-3);cursor:pointer;font-family:inherit;padding:4px 0;position:relative}
+  .tab.on{color:var(--accent)}
+  .tab svg{width:25px;height:25px}
+  .tab span{font-size:10.5px;font-weight:600}
+  .tab:active{opacity:.6}
+  .tab .badge{position:absolute;top:0;right:calc(50% - 22px);background:var(--warn);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+  .sheet-bg{position:fixed;inset:0;background:rgba(28,37,48,.32);z-index:40;opacity:0;pointer-events:none;transition:opacity .28s ease}
+  .sheet-bg.open{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:600px;margin:0 auto;background:var(--bg);border-radius:22px 22px 0 0;box-shadow:0 -8px 40px rgba(28,37,48,.2);transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1);max-height:94vh;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom) + 20px)}
+  .sheet.open{transform:translateY(0)}
+  .grabber{width:38px;height:5px;background:var(--hair);border-radius:3px;margin:10px auto 4px}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;padding:6px 20px 12px}
+  .sheet-head h2{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .sheet-head button{border:0;background:none;font-size:16px;font-weight:600;color:var(--accent);cursor:pointer;font-family:inherit}
+  .sheet-body{padding:0 20px}
+
+  .field-group{margin-bottom:14px}
+  .field-group label{font-size:12.5px;font-weight:700;color:var(--ink-2);display:block;margin-bottom:6px}
+  .field-group input,.field-group textarea,.field-group select{width:100%;border:0;background:var(--surface);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;color:var(--ink);box-shadow:var(--shadow-sm)}
+  .field-group select{appearance:none;padding-right:36px;cursor:pointer;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7"><path d="M1 1l4.5 4.5L10 1" stroke="%235A6472" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>');background-repeat:no-repeat;background-position:right 14px center}
+  .field-group textarea{min-height:52px;resize:vertical}
+  .field-group.mono textarea{font-family:var(--mono)}
+  .field-group input:focus,.field-group textarea:focus,.field-group select:focus{outline:2px solid var(--accent-soft)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:11.5px;color:var(--ink-3);margin-top:5px;line-height:1.5}
+  .save-btn{width:100%;border:0;background:var(--accent);color:#fff;border-radius:14px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;font-family:inherit}
+  .save-btn:active{transform:scale(.98)}
+
+  .type-seg{display:flex;gap:6px;flex-wrap:wrap}
+  .type-seg button{border:0;background:var(--surface);color:var(--ink-2);border-radius:10px;padding:9px 13px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-sm);font-family:inherit}
+  .type-seg button.on{background:var(--accent);color:#fff}
+
+  .input-tabs{display:flex;gap:6px;margin-bottom:10px}
+  .input-tabs button{flex:1;border:0;background:var(--surface);color:var(--ink-2);border-radius:10px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-sm);font-family:inherit}
+  .input-tabs button.on{background:var(--accent);color:#fff}
+  .input-pane{display:none}
+  .input-pane.on{display:block}
+  math-field{width:100%;border:0;background:var(--surface);border-radius:12px;padding:12px 14px;font-size:20px;box-shadow:var(--shadow-sm);--primary:var(--accent)}
+  math-field:focus-within{outline:2px solid var(--accent-soft)}
+  .ml-note{font-size:11.5px;color:var(--ink-3);margin-top:6px;line-height:1.5}
+  .ml-fallback{display:none}
+  .preview-box{background:var(--surface);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow-sm);min-height:44px;margin-bottom:6px}
+  .preview-box .back-formula .katex{font-size:1.3em}
+
+  /* 손글씨 첨부 (폼 최상단 공용) */
+  .io-tabs{display:flex;gap:6px;margin-bottom:8px}
+  .io-tabs button{border:0;background:var(--surface);color:var(--ink-2);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-sm);font-family:inherit}
+  .io-tabs button.on{background:var(--accent);color:#fff}
+  .io-pane{display:none}
+  .io-pane.on{display:block}
+  .draw-box .pad-canvas{width:100%;height:220px;border-radius:10px;background:linear-gradient(var(--hair-2) 1px,transparent 1px);background-size:100% 30px;touch-action:none;-ms-touch-action:none;overscroll-behavior:contain;display:block;cursor:crosshair;border:1px solid var(--hair-2)}
+  .draw-box .pad-tools{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
+  .draw-box .pad-tools button{border:0;background:var(--bg-soft);color:var(--ink-2);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .draw-box .pad-tools .pen{width:24px;height:24px;border-radius:50%;padding:0;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--hair)}
+  .draw-box .pad-tools .pen.on{box-shadow:0 0 0 2px var(--accent)}
+  .draw-box .pad-tools button.era-on{background:var(--warn);color:#fff}
+  .draw-box .full{margin-left:auto;background:var(--accent-tint);color:var(--accent)}
+  .draw-box .dhint{font-size:11px;color:var(--ink-3);margin-top:6px}
+  .pad-canvas{touch-action:none}
+
+  /* 전체화면 손글씨 오버레이 */
+  .fs-draw{position:fixed;inset:0;z-index:60;background:var(--bg);display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 12px)}
+  .fs-draw.open{display:flex}
+  .fs-draw .fs-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .fs-draw .fs-head b{font-size:16px}
+  .fs-draw .fs-head button{border:0;background:var(--surface);color:var(--accent);border-radius:10px;padding:9px 14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:var(--shadow-sm)}
+  .fs-draw canvas{flex:1;width:100%;border-radius:12px;background:linear-gradient(var(--hair-2) 1px,transparent 1px);background-size:100% 32px;touch-action:none;border:1px solid var(--hair-2)}
+  .fs-draw .fs-tools{display:flex;gap:8px;margin-top:10px;align-items:center}
+  .fs-draw .fs-tools button{border:0;background:var(--surface);color:var(--ink-2);border-radius:10px;padding:11px 14px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:var(--shadow-sm)}
+  .fs-draw .fs-tools .pen{width:30px;height:30px;border-radius:50%;padding:0}
+  .fs-draw .fs-tools .pen.on{box-shadow:0 0 0 2px var(--accent)}
+
+  .toast{position:fixed;bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);left:50%;transform:translateX(-50%) translateY(20px);z-index:70;background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;opacity:0;transition:all .3s ease;pointer-events:none;white-space:nowrap;max-width:90vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .action-sheet{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:41;max-width:576px;margin:0 auto;transform:translateY(150%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+  .action-sheet.open{transform:translateY(0)}
+  .action-group{background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-radius:15px;overflow:hidden;margin-bottom:8px}
+  .action-group button{width:100%;border:0;background:none;padding:16px;font-size:17px;cursor:pointer;font-family:inherit;color:var(--accent);border-bottom:1px solid var(--hair-2)}
+  .action-group button:last-child{border-bottom:0}
+  .action-group button.danger{color:var(--warn)}
+  .action-cancel{width:100%;border:0;background:var(--surface);border-radius:15px;padding:16px;font-size:17px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;box-shadow:var(--shadow-sm)}
+
+  .pad-tools button.era-on{background:var(--warn);color:#fff}
+  .fs-draw .fs-tools button.era-on{background:var(--warn);color:#fff}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="nav">
+    <div class="nav-row">
+      <div><div class="nav-title">Study Tool</div><div class="nav-sub" id="nav-sub">카드를 가리고 떠올려보세요</div></div>
+      <div class="nav-actions">
+        <button class="icon-btn" id="import-btn" title="CSV 불러오기">&#8595;</button>
+        <button class="icon-btn" id="export-btn" title="CSV 내보내기">&#8593;</button>
+        <button class="icon-btn primary" id="add-btn" title="카드 추가">＋</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-wrap" id="search-wrap">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <input id="search" type="search" placeholder="앞면 · 뒷면 · 태그 검색">
+    </div>
+  </div>
+
+  <div class="chiprow" id="row-cat"></div>
+  <div class="chiprow" id="row-field"></div>
+  <div class="chiprow" id="row-sub"></div>
+  <div id="chip-hint" style="display:none;font-size:11px;color:var(--ink-3);padding:2px 18px 0">분류·분야·과목을 길게 누르면 이름 변경·삭제할 수 있어요</div>
+
+  <div class="list" id="list"></div>
+  <div id="train-view"></div>
+</div>
+
+<nav class="tabbar">
+  <button class="tab on" data-tab="study"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5.5A1.5 1.5 0 015.5 4H10a2 2 0 012 2v13a1.6 1.6 0 00-1.2-.55H5.5A1.5 1.5 0 014 17V5.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 5.5A1.5 1.5 0 0018.5 4H14a2 2 0 00-2 2v13a1.6 1.6 0 011.2-.55h5.3A1.5 1.5 0 0020 17V5.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span>공부</span></button>
+  <button class="tab" data-tab="memo"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3.5" width="16" height="17" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>암기</span></button>
+  <button class="tab" data-tab="train"><svg viewBox="0 0 24 24" fill="none"><path d="M13 3L4 14h6l-1 7 9-11h-6l1-7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span>훈련</span><span class="badge" id="train-badge" style="display:none">0</span></button>
+  <button class="tab" data-tab="stats"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V10M12 19V5M19 19v-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>진도</span></button>
+</nav>
+
+<!-- 카드 추가/편집 시트 -->
+<div class="sheet-bg" id="sheet-bg"></div>
+<div class="sheet" id="sheet">
+  <div class="grabber"></div>
+  <div class="sheet-head"><h2 id="sheet-title">새 카드</h2><button id="sheet-close">닫기</button></div>
+  <div class="sheet-body">
+    <div class="two">
+      <div class="field-group"><label>대분류</label><select id="s-cat"></select></div>
+      <div class="field-group"><label>분야</label><select id="s-field"></select></div>
+    </div>
+    <div class="field-group"><label>과목</label><select id="s-sub"></select></div>
+    <div class="field-group"><label>유형</label>
+      <div class="type-seg" id="s-type">
+        <button data-v="개념" class="on">개념</button>
+        <button data-v="번역">번역</button>
+        <button data-v="구절">구절/시</button>
+        <button data-v="공식">공식</button>
+      </div>
+    </div>
+
+    <!-- 앞면 -->
+    <div class="field-group" id="front-group">
+      <label id="lbl-front">앞면 · 질문</label>
+      <div class="input-tabs io-tabs" data-io="front">
+        <button data-mode="text" class="on">직접 입력</button>
+        <button data-mode="draw">손글씨</button>
+      </div>
+      <div class="io-pane on" data-io="front" data-mode="text">
+        <textarea id="s-front" placeholder="상황·키워드 (이걸 보고 답을 떠올림)"></textarea>
+      </div>
+      <div class="io-pane" data-io="front" data-mode="draw">
+        <div class="draw-box" data-pad="padFront"></div>
+      </div>
+    </div>
+
+    <!-- 뒷면 (텍스트/손글씨) -->
+    <div class="field-group" id="back-group">
+      <label id="lbl-back">뒷면 · 답</label>
+      <div class="input-tabs io-tabs" data-io="back">
+        <button data-mode="text" class="on">직접 입력</button>
+        <button data-mode="draw">손글씨</button>
+      </div>
+      <div class="io-pane on" data-io="back" data-mode="text">
+        <textarea id="s-back" placeholder="가렸다가 확인할 쪽"></textarea>
+        <div class="hint" id="cloze-hint">빈칸으로 만들 단어를 {{중괄호 두 개}}로 감싸면 그 부분만 가려집니다. 예: 나 보기가 {{역겨워}} 가실 때에는</div>
+      </div>
+      <div class="io-pane" data-io="back" data-mode="draw">
+        <div class="draw-box" data-pad="padBack"></div>
+      </div>
+    </div>
+
+    <!-- 공식 전용 -->
+    <div class="field-group mono" id="back-formula-group" style="display:none"><label>공식 (LaTeX)</label>
+      <div class="input-tabs" id="formula-input-tabs">
+        <button data-pane="latex" class="on">직접 입력</button>
+        <button data-pane="visual">수식 편집기</button>
+        <button data-pane="draw">손글씨</button>
+      </div>
+      <div class="input-pane on" data-pane="latex"><textarea id="s-formula" placeholder="\delta = \dfrac{PL^3}{3EI}"></textarea><div class="hint">분수 \dfrac{}{}, 제곱 ^2, 루트 \sqrt{}</div></div>
+      <div class="input-pane" data-pane="visual"><math-field id="s-mathfield"></math-field><div class="ml-note">버튼으로 분수·기호 입력. LaTeX를 몰라도 됩니다.</div><div class="ml-fallback" id="ml-fallback"><textarea id="s-formula-fb"></textarea></div></div>
+      <div class="input-pane" data-pane="draw"><div class="draw-box" data-pad="padFormula"></div></div>
+      <div class="preview-box" id="preview-wrap"><div class="back-formula" id="s-preview"></div></div>
+    </div>
+
+    <div class="field-group"><label id="lbl-aux1">보조 1 (선택)</label><input id="s-aux1" placeholder="문법 포인트 · 변수 설명 등"></div>
+    <div class="field-group"><label id="lbl-aux2">보조 2 (선택)</label><input id="s-aux2" placeholder="예문 · 발음 등"></div>
+    <div class="field-group" id="confuse-group" style="display:none"><label>혼동 주의 짝 (선택)</label><input id="s-confuse" placeholder="헷갈리는 공식·개념. 예: 굽힘 32M/πd³ (비틀림 16과 혼동)"></div>
+    <div class="field-group"><label>태그 · 쉼표로 구분 (선택)</label><input id="s-tags" placeholder="처짐, 재료역학"></div>
+    <button class="save-btn" id="s-save">저장</button>
+  </div>
+</div>
+
+<!-- 항목 추가 시트 -->
+<div class="sheet-bg" id="add2-bg"></div>
+<div class="sheet" id="add2-sheet">
+  <div class="grabber"></div>
+  <div class="sheet-head"><h2 id="add2-title">추가</h2><button id="add2-close">닫기</button></div>
+  <div class="sheet-body">
+    <div class="field-group"><label id="add2-label">이름</label><input id="add2-name" placeholder=""></div>
+    <button class="save-btn" id="add2-save">추가</button>
+  </div>
+</div>
+
+<!-- 액션 시트 -->
+<div class="sheet-bg" id="action-bg"></div>
+<div class="action-sheet" id="action-sheet">
+  <div class="action-group">
+    <button id="act-edit">편집</button>
+    <button id="act-promote">암기 카드로 승격</button>
+    <button class="danger" id="act-delete">삭제</button>
+  </div>
+  <button class="action-cancel" id="act-cancel">취소</button>
+</div>
+
+<!-- 전체화면 손글씨 -->
+<div class="fs-draw" id="fs-draw">
+  <div class="fs-head"><b>손글씨</b><div style="display:flex;gap:8px"><button id="fs-cancel">취소</button><button id="fs-attach" style="background:var(--accent);color:#fff">첨부하기</button></div></div>
+  <canvas id="fs-canvas"></canvas>
+  <div class="fs-tools">
+    <button class="pen on" id="fs-pen-ink" style="background:var(--accent)"></button>
+    <button class="pen" id="fs-pen-red" style="background:#B5524A"></button>
+    <button id="fs-eraser">지우개</button>
+    <button id="fs-undo">되돌리기</button>
+    <button id="fs-clear">전체 지우기</button>
+  </div>
+</div>
+
+<input type="file" id="csv-file" accept=".csv" style="display:none">
+<div class="toast" id="toast"></div>
+
+<script src="./app.js"></script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{});});}
+</script>
+</body>
+</html>
